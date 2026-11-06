@@ -2,7 +2,7 @@
 DATABASE_URL ?= postgresql://flarewatch:flarewatch@localhost:5432/flarewatch
 export DATABASE_URL
 
-.PHONY: db-up db-down db-reset migrate worker-install test lint web-install web-dev web-build banned-words seed ingest backfill
+.PHONY: db-up db-down db-reset migrate worker-install test lint web-install web-dev web-build banned-words seed ingest backfill countries
 
 db-up:            ## Start PostGIS in docker and apply migrations
 	docker compose up -d --wait db
@@ -33,6 +33,10 @@ backfill:         ## Pull 90 days of Standard Processing data (needs FIRMS_MAP_K
 lint:
 	cd worker && ruff check . && ruff format --check .
 	cd web && npm run lint
+
+countries:        ## Load Natural Earth country borders (labels sites with a country)
+	cd web && node scripts/export-countries.mjs ../data/countries.geojson
+	cd worker && python -m flarewatch.cli load-countries ../data/countries.geojson
 
 seed:             ## Load synthetic demo data (no API key needed)
 	cd worker && python -m flarewatch.cli seed-demo

@@ -86,11 +86,12 @@ Requires Docker, Python 3.12+, Node 22.
 ```bash
 make db-up            # PostGIS in docker + migrations
 make worker-install   # pip install -e worker[dev]
+make countries        # optional: country borders, so demo sites land on land and get country labels
 make seed             # synthetic demo data (no API key needed)
 make web-install web-dev   # http://localhost:3000
 ```
 
-For real data, put a free [FIRMS MAP_KEY](https://firms.modaps.eosdis.nasa.gov/api/map_key/) in `.env` (copy `.env.example`) and run `make backfill` once, then `make ingest`. Load the reference list with `python -m flarewatch.cli load-reference <file.csv>` and (optionally) country polygons with `python -m flarewatch.cli load-countries <natural-earth-admin0.geojson>`.
+For real data, put a free [FIRMS MAP_KEY](https://firms.modaps.eosdis.nasa.gov/api/map_key/) in `.env` (copy `.env.example`) and run `make backfill` once, then `make ingest`. Load the reference list with `python -m flarewatch.cli load-reference <file.csv>` and (optionally) country polygons with `make countries` (Natural Earth 1:50m via the `world-atlas` package).
 
 Tests: `cd worker && TEST_DATABASE_URL=postgresql://flarewatch:flarewatch@localhost:5432/flarewatch_test pytest` (the DB tests drop and recreate the `public` schema of that database, so point it at a throwaway one; without it, only the pure unit tests run).
 

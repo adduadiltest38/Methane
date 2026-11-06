@@ -25,7 +25,8 @@ def load_countries(conn: psycopg.Connection, path: str | Path) -> int:
         cur.executemany(
             """
             INSERT INTO countries (name, iso3, geom)
-            VALUES (%s, %s, ST_Multi(ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)))
+            VALUES (%s, %s, ST_Multi(ST_CollectionExtract(
+                ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)), 3))
                             ::geography)
             """,
             rows,

@@ -30,6 +30,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
     "tailwindcss": "^4",
-    "typescript": "^5.9"
+    "topojson-client": "^3.1.0",
+    "typescript": "^5.9",
+    "world-atlas": "^2.0.2"
   }
 }
