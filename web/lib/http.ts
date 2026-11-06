@@ -17,7 +17,10 @@ export async function handle(fn: () => Promise<Response>): Promise<Response> {
     if (err instanceof BadRequest) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
-    console.error(err);
+    // Log name and message only. Error objects from URL parsing or the database driver can
+    // carry the connection string (password included) as extra properties.
+    const e = err instanceof Error ? err : new Error(String(err));
+    console.error(`${e.name}: ${e.message}`);
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

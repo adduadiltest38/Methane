@@ -8,8 +8,19 @@ declare global {
   var __flarewatchSql: postgres.Sql | undefined;
 }
 
+export class ConfigError extends Error {}
+
 function create(): postgres.Sql {
-  if (!url) throw new Error("DATABASE_URL_READONLY is not set");
+  if (!url) throw new ConfigError("DATABASE_URL_READONLY is not set");
+  try {
+    new URL(url);
+  } catch {
+    // Never include the URL itself: it contains the password.
+    throw new ConfigError(
+      "DATABASE_URL_READONLY is not a valid URL. Special characters in the password " +
+        "(such as @ # / ? :) must be percent-encoded, or use a letters-and-digits password.",
+    );
+  }
   return postgres(url, {
     max: 5,
     idle_timeout: 20,
