@@ -1,0 +1,115 @@
+"""M3: clustering & daily stats."""
+
+from datetime import UTC, datetime, timedelta
+
+import numpy as np
+
+from flarewatch.clustering import (
+    cluster_points,
+    cluster_unassigned,
+    format_site_code,
+    refresh_site_geometry,
+    weighted_centroid,
+)
+from flarewatch.firms_client import Detection
+from flarewatch.ingest import insert_detections
+from flarewatch.stats import refresh_daily_stats
+
+CENTRES = [(29.0, 48.0), (26.5, 50.2), (31.2, 47.4)]
+
+
+def _synthetic(rng, n_per_group=8, n_noise=15, spread_deg=0.001):
+    lat, lon = [], []
+    for c_lat, c_lon in CENTRES:
+        lat += list(rng.normal(c_lat, spread_deg, n_per_group))
+        lon += list(rng.normal(c_lon, spread_deg, n_per_group))
+    # noise: isolated points, each far from everything else
+    lat += list(rng.uniform(13, 37, n_noise))
+    lon += list(rng.uniform(35, 62, n_noise))
+    return np.array(lat), np.array(lon)
+
+
+def test_three_groups_plus_noise_gives_three_clusters():
+    rng = np.random.default_rng(0)
+    lat, lon = _synthetic(rng)
+    labels = cluster_points(lat, lon, eps_m=500, min_samples=3)
+    assert len(set(labels) - {-1}) == 3
+    assert (labels[24:] == -1).all()
+
+
+def test_weighted_centroid():
+    lat = np.array([0.0, 1.0])
+    lon = np.array([0.0, 1.0])
+    assert weighted_centroid(lat, lon, np.array([3.0, 1.0])) == (0.25, 0.25)
+    assert weighted_centroid(lat, lon, np.array([0.0, np.nan])) == (0.5, 0.5)
+
+
+def test_site_code_format():
+    assert format_site_code(1) == "FW-0001"
+    assert format_site_code(12345) == "FW-12345"
+
+
+def _dets(lat, lon, when, frp=10.0, night=True):
+    return [
+        Detection("TEST", when + timedelta(minutes=i), float(a), float(o), 330, 300, frp,
+                  "n", "N" if night else "D", 0.4, 0.4)
+        for i, (a, o) in enumerate(zip(lat, lon, strict=True))
+    ]
+
+
+def test_db_clusters_and_reassigns_to_existing_sites(db, settings):
+    rng = np.random.default_rng(1)
+    lat, lon = _synthetic(rng)
+    t0 = datetime.now(UTC) - timedelta(days=5)
+    insert_detections(db, _dets(lat, lon, t0))
+
+    res = cluster_unassigned(db, settings)
+    refresh_site_geometry(db)
+    assert res.new_sites == 3
+    codes = [r[0] for r in db.execute("SELECT code FROM sites ORDER BY code")]
+    assert codes == ["FW-0001", "FW-0002", "FW-0003"]
+
+    # second batch: new detections at the same locations (plus a tight new group of 3
+    # within 750 m of an existing site but offset ~400 m) -> no new sites
+    lat2, lon2 = _synthetic(np.random.default_rng(2), n_noise=0)
+    lat2 = np.append(lat2, [29.0036, 29.0037, 29.0035])
+    lon2 = np.append(lon2, [48.0, 48.0001, 47.9999])
+    insert_detections(db, _dets(lat2, lon2, t0 + timedelta(days=1)))
+    res2 = cluster_unassigned(db, settings)
+    refresh_site_geometry(db)
+
+    assert res2.new_sites == 0
+    assert db.execute("SELECT COUNT(*) FROM sites").fetchone()[0] == 3
+    unassigned_near = db.execute(
+        "SELECT COUNT(*) FROM detections WHERE site_id IS NULL AND acq_time > %s",
+        (t0 + timedelta(hours=12),),
+    ).fetchone()[0]
+    assert unassigned_near == 0
+
+
+def test_low_confidence_excluded(db, settings):
+    t0 = datetime.now(UTC) - timedelta(days=1)
+    dets = [
+        Detection("TEST", t0 + timedelta(minutes=i), 29.0 + i * 1e-4, 48.0, 330, 300, 5, "l",
+                  "N", 0.4, 0.4)
+        for i in range(5)
+    ]
+    insert_detections(db, dets)
+    assert cluster_unassigned(db, settings).new_sites == 0
+
+
+def test_daily_stats(db, settings):
+    day = datetime.now(UTC).replace(hour=1, minute=0, second=0, microsecond=0) - timedelta(days=2)
+    lat = np.array([29.0, 29.0001, 29.0002, 29.0001])
+    lon = np.array([48.0, 48.0001, 48.0, 48.0002])
+    dets = _dets(lat[:3], lon[:3], day, frp=10.0, night=True)
+    dets += _dets(lat[3:], lon[3:], day + timedelta(hours=10), frp=4.0, night=False)
+    insert_detections(db, dets)
+    cluster_unassigned(db, settings)
+    refresh_daily_stats(db)
+    row = db.execute(
+        "SELECT day, detections, night_detections, frp_sum, frp_max FROM site_daily_stats"
+    ).fetchall()
+    assert len(row) == 1
+    _, n, night, frp_sum, frp_max = row[0]
+    assert (n, night, frp_sum, frp_max) == (4, 3, 34.0, 10.0)
