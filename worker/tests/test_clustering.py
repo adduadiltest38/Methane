@@ -172,3 +172,27 @@ def test_nearby_new_clusters_merge_into_one_site(db, settings):
     res = cluster_unassigned(db, settings)
     assert res.new_sites == 1
     assert res.clustered_detections == 8
+
+
+def test_grid_clustering_matches_raw_dbscan():
+    rng = np.random.default_rng(3)
+    lat, lon = _synthetic(rng, n_per_group=30)
+    raw = cluster_points(lat, lon, eps_m=500, min_samples=3, grid_deg=0)
+    grid = cluster_points(lat, lon, eps_m=500, min_samples=3)
+    # same partition (label ids may differ)
+    assert len(set(raw) - {-1}) == len(set(grid) - {-1}) == 3
+    assert ((raw == -1) == (grid == -1)).all()
+    for k in set(raw) - {-1}:
+        assert len(set(grid[raw == k])) == 1
+
+
+def test_dense_site_is_one_cluster_and_weights_count_detections():
+    rng = np.random.default_rng(4)
+    # 5000 detections at one flare (dense) -> one cluster
+    lat = rng.normal(27.0, 0.001, 5000)
+    lon = rng.normal(50.0, 0.001, 5000)
+    labels = cluster_points(lat, lon, eps_m=500, min_samples=3)
+    assert set(labels) == {0}
+    # 3 detections snapped into the same grid cell still satisfy min_samples=3
+    same = cluster_points(np.array([27.0, 27.0001, 27.0002]), np.array([50.0] * 3), 500, 3)
+    assert set(same) == {0}

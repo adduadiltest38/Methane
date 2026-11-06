@@ -28,18 +28,41 @@ log = logging.getLogger(__name__)
 EARTH_RADIUS_M = 6_371_008.8
 
 
-def cluster_points(lat: np.ndarray, lon: np.ndarray, eps_m: float, min_samples: int) -> np.ndarray:
-    """Run DBSCAN with a haversine metric. Returns labels (-1 = noise)."""
+def cluster_points(
+    lat: np.ndarray,
+    lon: np.ndarray,
+    eps_m: float,
+    min_samples: int,
+    grid_deg: float = 0.001,
+) -> np.ndarray:
+    """Run DBSCAN with a haversine metric. Returns one label per point (-1 = noise).
+
+    Persistent flares produce hundreds to thousands of detections within a few hundred metres,
+    and plain DBSCAN materialises every point's neighbour list (memory grows with the square of
+    a site's detection count). Points are therefore snapped to a ``grid_deg`` grid (~110 m at
+    0.001°, well below the 375 m VIIRS pixel and the 500 m eps) and DBSCAN runs on the unique
+    cells, each weighted by its number of detections, so ``min_samples`` still counts
+    detections. Set ``grid_deg=0`` to cluster raw points.
+    """
     if len(lat) == 0:
         return np.empty(0, dtype=int)
-    coords = np.radians(np.column_stack([lat, lon]))
+    lat = np.asarray(lat, dtype=float)
+    lon = np.asarray(lon, dtype=float)
+    if grid_deg > 0:
+        cells = np.column_stack([np.round(lat / grid_deg), np.round(lon / grid_deg)])
+        uniq, inverse, counts = np.unique(cells, axis=0, return_inverse=True, return_counts=True)
+        inverse = inverse.reshape(-1)
+        pts, weights = uniq * grid_deg, counts
+    else:
+        pts, weights, inverse = np.column_stack([lat, lon]), None, None
     model = DBSCAN(
         eps=eps_m / EARTH_RADIUS_M,
         min_samples=min_samples,
         metric="haversine",
         algorithm="ball_tree",
     )
-    return model.fit_predict(coords)
+    labels = model.fit_predict(np.radians(pts), sample_weight=weights)
+    return labels if inverse is None else labels[inverse]
 
 
 def haversine_m(lat1: float, lon1: float, lat2: np.ndarray, lon2: np.ndarray) -> np.ndarray:
