@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
+import pytest
 
 from flarewatch.clustering import (
     cluster_points,
@@ -135,3 +136,39 @@ def test_daily_stats(db, settings):
     assert len(row) == 1
     _, n, night, frp_sum, frp_max = row[0]
     assert (n, night, frp_sum, frp_max) == (4, 3, 34.0, 10.0)
+
+
+def test_haversine_m():
+    from flarewatch.clustering import haversine_m
+
+    d = haversine_m(0.0, 0.0, np.array([0.0, 1.0]), np.array([1.0, 0.0]))
+    assert d == pytest.approx([111_195, 111_195], rel=1e-3)
+
+
+def test_many_clusters_in_one_pass(db, settings):
+    # 200 well-separated groups -> 200 sites with sequential codes, all detections assigned
+    rng = np.random.default_rng(9)
+    t0 = datetime.now(UTC) - timedelta(days=3)
+    dets = []
+    for g in range(200):
+        c_lat, c_lon = 14 + (g // 20) * 2.0, 36 + (g % 20) * 1.2
+        lat = rng.normal(c_lat, 0.0008, 4)
+        lon = rng.normal(c_lon, 0.0008, 4)
+        dets += _dets(lat, lon, t0 + timedelta(hours=g))
+    insert_detections(db, dets)
+    res = cluster_unassigned(db, settings)
+    assert res.new_sites == 200 and res.clustered_detections == 800
+    codes = [r[0] for r in db.execute("SELECT code FROM sites ORDER BY id")]
+    assert codes[0] == "FW-0001" and codes[-1] == "FW-0200"
+    assert db.execute("SELECT COUNT(*) FROM detections WHERE site_id IS NULL").fetchone()[0] == 0
+
+
+def test_nearby_new_clusters_merge_into_one_site(db, settings):
+    # two tight groups ~600 m apart: separate DBSCAN clusters (eps 500 m) but one site (750 m)
+    t0 = datetime.now(UTC) - timedelta(days=1)
+    a = _dets(np.full(4, 29.0) + np.arange(4) * 1e-5, np.full(4, 48.0), t0)
+    b = _dets(np.full(4, 29.0054) + np.arange(4) * 1e-5, np.full(4, 48.0), t0 + timedelta(hours=1))
+    insert_detections(db, a + b)
+    res = cluster_unassigned(db, settings)
+    assert res.new_sites == 1
+    assert res.clustered_detections == 8
