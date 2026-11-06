@@ -2,13 +2,14 @@ name: Ingest
 
 on:
   schedule:
-    - cron: "0 */3 * * *"
+    # Every 3 hours at minute 17: GitHub delays or drops many jobs scheduled on the hour.
+    - cron: "17 */3 * * *"
   workflow_dispatch:
     inputs:
       command:
         description: "Worker command"
         type: choice
-        options: [run, backfill, process]
+        options: [run, backfill, process, countries]
         default: run
       days:
         description: "Days to backfill (backfill only)"
@@ -42,6 +43,13 @@ jobs:
         run: |
           command -v psql >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q postgresql-client; }
           ./db/migrate.sh
+      - name: Export country borders (countries only)
+        if: github.event.inputs.command == 'countries'
+        working-directory: web
+        run: |
+          npm ci --no-audit --no-fund
+          node scripts/export-countries.mjs ../data/countries.geojson
+
       - name: Run worker
         working-directory: worker
         env:
@@ -50,6 +58,9 @@ jobs:
         run: |
           if [ "$COMMAND" = "backfill" ]; then
             python -m flarewatch.cli backfill --days "$DAYS"
+          elif [ "$COMMAND" = "countries" ]; then
+            mkdir -p ../data
+            python -m flarewatch.cli load-countries ../data/countries.geojson
           else
             python -m flarewatch.cli "$COMMAND"
           fi
