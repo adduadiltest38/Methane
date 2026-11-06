@@ -11,9 +11,15 @@ export async function getMeta(): Promise<Meta> {
      GROUP BY source
      ORDER BY source
   `;
-  const [{ count }] = (await db`SELECT COUNT(*)::int AS count FROM sites`) as unknown as [
-    { count: number },
-  ];
+  const classRows = await db`
+    SELECT classification, COUNT(*)::int AS n FROM sites GROUP BY classification
+  `;
+  const class_counts: Record<string, number> = {};
+  for (const r of classRows) class_counts[r.classification] = r.n;
+  const count = Object.values(class_counts).reduce((a, b) => a + b, 0);
+  const [{ n: detections_24h }] = (await db`
+    SELECT COUNT(*)::int AS n FROM detections WHERE acq_time >= now() - interval '24 hours'
+  `) as unknown as [{ n: number }];
   const last = sources
     .map((r) => r.last_success as Date | null)
     .filter((d): d is Date => d !== null)
@@ -26,6 +32,8 @@ export async function getMeta(): Promise<Meta> {
     })),
     demo_data: sources.some((r) => r.source === "DEMO_SYNTHETIC"),
     site_count: count,
+    class_counts,
+    detections_24h,
     attribution: ATTRIBUTION,
     disclaimer: DISCLAIMER,
   };

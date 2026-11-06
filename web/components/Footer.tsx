@@ -3,13 +3,12 @@ import { DISCLAIMER } from "@/lib/attribution";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--panel)] px-4 py-2 text-[11px] leading-snug text-[var(--muted)]">
+    <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-line bg-ink-1 px-4 py-1.5 text-[11px] leading-snug text-faint">
       <p>{DISCLAIMER}</p>
       <p>
-        Data: NASA FIRMS (VIIRS 375 m). Relative thermal intensity is shown as MW FRP (fire
-        radiative power) and is not converted to gas volumes or emissions.{" "}
-        <Link href="/about" className="underline hover:text-[var(--text)]">
-          Methodology &amp; attribution
+        NASA FIRMS VIIRS · values are relative thermal intensity (MW FRP), not emissions ·{" "}
+        <Link href="/about" className="text-muted underline decoration-line underline-offset-2 hover:text-fg">
+          Method &amp; attribution
         </Link>
       </p>
     </footer>

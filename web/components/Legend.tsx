@@ -1,19 +1,25 @@
-import { CLASSES, CLASS_LABEL, rgb } from "@/lib/classes";
+import { CLASSES, CLASS_SHORT, rgb } from "@/lib/classes";
 
 export default function Legend() {
   return (
-    <div className="w-max max-w-[16rem] rounded-md border border-[var(--border)] bg-[var(--panel)]/90 p-2 text-xs backdrop-blur">
-      <ul className="space-y-1">
-        {CLASSES.map((c) => (
-          <li key={c} className="flex items-center gap-2">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ background: rgb(c) }} />
-            {CLASS_LABEL[c]}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-1.5 text-[10px] text-[var(--muted)]">
-        Circle size: relative thermal intensity (MW FRP, last 30 days)
-      </p>
+    <div className="bezel flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2">
+      {CLASSES.map((c) => (
+        <span key={c} className="flex items-center gap-1.5 font-display text-[12px] uppercase tracking-[0.1em] text-muted">
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-full"
+            style={{ background: rgb(c), boxShadow: `0 0 8px ${rgb(c, 0.8)}` }}
+          />
+          {CLASS_SHORT[c]}
+        </span>
+      ))}
+      <span className="flex items-center gap-1.5 border-l border-line pl-3 font-display text-[11px] uppercase tracking-[0.1em] text-faint">
+        <svg width="34" height="12" aria-hidden>
+          <circle cx="4" cy="6" r="2" fill="none" stroke="var(--color-muted)" />
+          <circle cx="13" cy="6" r="3.5" fill="none" stroke="var(--color-muted)" />
+          <circle cx="26" cy="6" r="5.5" fill="none" stroke="var(--color-muted)" />
+        </svg>
+        Size = MW FRP, 30 d
+      </span>
     </div>
   );
 }

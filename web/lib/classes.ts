@@ -14,19 +14,26 @@ export const CLASS_LABEL: Record<SiteClass, string> = {
   unknown: "Unclassified",
 };
 
-// RGB, chosen to stay distinguishable on a dark basemap and for common colour-vision deficiencies
+export const CLASS_SHORT: Record<SiteClass, string> = {
+  likely_flare: "Flare",
+  persistent_industrial: "Industrial",
+  transient_fire: "Fire",
+  unknown: "Unclassified",
+};
+
+// amber (heat), ice (cool persistent), coral (short-lived fire), slate (no call)
 export const CLASS_COLOR: Record<SiteClass, [number, number, number]> = {
-  likely_flare: [255, 166, 0],
-  persistent_industrial: [94, 172, 255],
-  transient_fire: [230, 80, 120],
-  unknown: [160, 160, 170],
+  likely_flare: [255, 171, 64],
+  persistent_industrial: [124, 199, 255],
+  transient_fire: [255, 93, 115],
+  unknown: [107, 122, 147],
 };
 
 export function isSiteClass(v: string): v is SiteClass {
   return (CLASSES as readonly string[]).includes(v);
 }
 
-export function rgb(c: SiteClass): string {
+export function rgb(c: SiteClass, alpha = 1): string {
   const [r, g, b] = CLASS_COLOR[c];
-  return `rgb(${r} ${g} ${b})`;
+  return alpha === 1 ? `rgb(${r} ${g} ${b})` : `rgb(${r} ${g} ${b} / ${alpha})`;
 }

@@ -1,65 +1,66 @@
 import type { ActivityChange } from "@/lib/types";
 
-const LABEL: Record<ActivityChange["direction"], string> = {
-  increase: "Activity increase detected",
-  decrease: "Activity decrease detected",
-  new_site: "New persistent heat source detected",
-  inactive: "No recent detections",
-};
-
-const ICON: Record<ActivityChange["direction"], string> = {
-  increase: "▲",
-  decrease: "▼",
-  new_site: "●",
-  inactive: "○",
+const META: Record<ActivityChange["direction"], { label: string; glyph: string; color: string }> = {
+  increase: { label: "Activity increase", glyph: "▲", color: "var(--color-heat-2)" },
+  decrease: { label: "Activity decrease", glyph: "▼", color: "var(--color-ice)" },
+  new_site: { label: "New persistent source", glyph: "◆", color: "var(--color-heat-1)" },
+  inactive: { label: "No recent detections", glyph: "○", color: "var(--color-slate)" },
 };
 
 export default function ChangeItem({
   change,
   showSite = true,
   onClick,
+  active = false,
 }: {
   change: ActivityChange;
   showSite?: boolean;
   onClick?: () => void;
+  active?: boolean;
 }) {
+  const m = META[change.direction];
   const body = (
-    <>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[var(--accent)]" aria-hidden>
-          {ICON[change.direction]}
-        </span>
-        <span className="font-medium">{LABEL[change.direction]}</span>
+    <div className="relative pl-5">
+      <span
+        className="absolute left-0 top-[3px] grid h-3 w-3 place-items-center text-[9px]"
+        style={{ color: m.color }}
+        aria-hidden
+      >
+        {m.glyph}
+      </span>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13px] text-fg">{m.label}</span>
+        <span className="readout shrink-0 text-[10px] text-faint">{change.detected_at.slice(5, 10)}</span>
       </div>
-      <div className="text-[var(--muted)]">
+      <div className="readout mt-0.5 text-[11px] text-muted">
         {showSite && (
-          <>
+          <span className="text-fg/80">
             {change.site_code}
-            {change.country ? ` · ${change.country}` : ""} ·{" "}
-          </>
+            {change.country ? ` · ${change.country}` : ""}
+          </span>
         )}
-        {change.detected_at.slice(0, 10)}
         {change.baseline !== null && change.recent !== null && (
-          <>
-            {" "}
-            · {change.baseline.toFixed(1)} → {change.recent.toFixed(1)} MW/day
-          </>
+          <span className="block">
+            {change.baseline.toFixed(1)} → <span style={{ color: m.color }}>{change.recent.toFixed(1)}</span> MW/day
+            {change.z_score !== null && <span className="text-faint"> · z {change.z_score.toFixed(1)}</span>}
+          </span>
         )}
-        {change.z_score !== null && <> · z {change.z_score.toFixed(1)}</>}
       </div>
-    </>
+    </div>
   );
   return (
-    <li className="text-xs">
+    <li>
       {onClick ? (
         <button
           onClick={onClick}
-          className="w-full rounded px-2 py-1.5 text-left hover:bg-[var(--panel-2)]"
+          className={`w-full border-l-2 px-3 py-2 text-left transition hover:bg-ink-2 ${
+            active ? "border-heat-2 bg-ink-2" : "border-transparent"
+          }`}
         >
           {body}
         </button>
       ) : (
-        <div className="px-2 py-1">{body}</div>
+        <div className="px-1 py-1.5">{body}</div>
       )}
     </li>
   );

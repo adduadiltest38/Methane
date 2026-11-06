@@ -60,6 +60,8 @@ export interface Meta {
   sources: { source: string; last_success: string | null }[];
   demo_data: boolean;
   site_count: number;
+  class_counts: Record<string, number>;
+  detections_24h: number;
   attribution: Record<string, string>;
   disclaimer: string;
 }

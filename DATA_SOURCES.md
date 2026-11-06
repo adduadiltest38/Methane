@@ -31,9 +31,10 @@ FlareWatch uses only free, publicly available satellite data. It does not join a
 - Dark vector style from **OpenFreeMap** (<https://openfreemap.org>), built on OpenMapTiles and OpenStreetMap data.
 - **Attribution:** "© OpenMapTiles © OpenStreetMap contributors" (rendered automatically by MapLibre's attribution control).
 
-## Country boundaries (optional)
+## Country boundaries
 
-- Natural Earth Admin 0 countries (public domain), loaded via `python -m flarewatch.cli load-countries <file.geojson>` and used only to label each site with a country name.
+- Natural Earth 1:50m Admin 0 countries (public domain), via the `world-atlas` npm package (ISC).
+- Used twice: as the app's own chart basemap (`web/public/geo/region.json`, rebuilt with `node web/scripts/export-region.mjs`) and to label each site with a country (`make countries`, or the `countries` command of the Ingest workflow).
 
 ---
 

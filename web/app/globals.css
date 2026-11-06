@@ -1,22 +1,145 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #0b0d12;
-  --panel: #141821;
-  --panel-2: #1b2030;
-  --border: #2a3142;
-  --text: #e6e8ee;
-  --muted: #9aa3b5;
-  --accent: #ffa600;
+/*
+  FlareWatch — "thermal observatory" console.
+  Night-navy ink for the chart, a thermal ramp (amber → red) reserved for heat/intensity,
+  ice blue as the cool counterpart for persistent industrial heat.
+  Type: Barlow Condensed for instrument labels, Barlow for reading, JetBrains Mono for readings.
+*/
+@theme {
+  --color-ink-0: #060a11;
+  --color-ink-1: #0b111c;
+  --color-ink-2: #111a29;
+  --color-ink-3: #182437;
+  --color-line: #233149;
+  --color-line-soft: #1a2638;
+  --color-fg: #e6ebf3;
+  --color-muted: #8c99b0;
+  --color-faint: #5a6880;
+
+  --color-heat-1: #ffd27a;
+  --color-heat-2: #ff9f43;
+  --color-heat-3: #f2542d;
+  --color-ice: #7cc7ff;
+  --color-coral: #ff5d73;
+  --color-slate: #6b7a93;
+
+  --font-sans: "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html,
 body {
-  background: var(--bg);
-  color: var(--text);
   height: 100%;
+  background: var(--color-ink-0);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* uppercase instrument label */
+.label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.readout {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.heat-text {
+  background: linear-gradient(90deg, var(--color-heat-1), var(--color-heat-2) 45%, var(--color-heat-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* thin bezel with corner ticks, used for floating instruments over the map */
+.bezel {
+  position: relative;
+  background: color-mix(in srgb, var(--color-ink-1) 88%, transparent);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(6px);
+}
+.bezel::before,
+.bezel::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-color: var(--color-heat-2);
+  pointer-events: none;
+}
+.bezel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+.bezel::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-heat-2);
+  outline-offset: 2px;
+}
+
+input[type="range"] {
+  accent-color: var(--color-heat-2);
 }
 
 .maplibregl-ctrl-attrib {
-  font-size: 11px;
+  font-size: 10px;
+  font-family: var(--font-sans);
+}
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background: color-mix(in srgb, var(--color-ink-1) 90%, transparent) !important;
+  color: var(--color-muted);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--color-muted);
+}
+.maplibregl-ctrl-group {
+  background: var(--color-ink-1) !important;
+  border: 1px solid var(--color-line);
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--color-line) !important;
+}
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(0.85);
+}
+
+.maplibregl-ctrl-scale {
+  background: color-mix(in srgb, var(--color-ink-1) 85%, transparent) !important;
+  border-color: var(--color-muted) !important;
+  color: var(--color-muted) !important;
+  font-family: var(--font-mono);
+  font-size: 10px !important;
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
