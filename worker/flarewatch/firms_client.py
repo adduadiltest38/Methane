@@ -174,7 +174,10 @@ class FirmsClient:
             except (httpx.TransportError, httpx.HTTPStatusError) as exc:
                 status = getattr(getattr(exc, "response", None), "status_code", None)
                 if status is not None and status < 500 and status != 429:
-                    raise FirmsError(f"FIRMS request failed ({status}) for {safe_url}") from exc
+                    body = exc.response.text.strip().replace(self.map_key, "***")[:300]
+                    raise FirmsError(
+                        f"FIRMS request failed ({status}) for {safe_url}: {body}"
+                    ) from exc
                 last_exc = exc
                 if attempt < self.retries:
                     wait = 2**attempt

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Iterable, Sequence
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import psycopg
 
@@ -146,14 +146,20 @@ def ingest_source(
     return fetched, inserted
 
 
-def run_nrt(conn: psycopg.Connection, client: FirmsClient, settings: Settings) -> dict[str, int]:
-    """Fetch the most recent ``nrt_day_range`` days for every NRT source."""
+def run_nrt(
+    conn: psycopg.Connection, client: FirmsClient, settings: Settings, today: date | None = None
+) -> dict[str, int]:
+    """Fetch the most recent ``nrt_day_range`` days (ending today, UTC) for every NRT source.
+
+    The start date is always sent: the FIRMS area API answers 400 when it is omitted.
+    """
     results: dict[str, int] = {}
     errors: list[str] = []
+    start = (today or datetime.now(UTC).date()) - timedelta(days=settings.nrt_day_range - 1)
     for source in settings.nrt_sources:
         try:
             _, inserted = ingest_source(
-                conn, client, source, settings.bbox_str, [(None, settings.nrt_day_range)]
+                conn, client, source, settings.bbox_str, [(start, settings.nrt_day_range)]
             )
             results[source] = inserted
         except (FirmsError, psycopg.Error) as exc:

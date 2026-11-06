@@ -129,3 +129,18 @@ def test_fetch_client_error_not_retried():
 def test_missing_key():
     with pytest.raises(FirmsError):
         FirmsClient("")
+
+
+def test_client_error_includes_reason_without_key():
+    c = FirmsClient(
+        "SECRETKEY",
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda r: httpx.Response(400, text="Invalid date for SECRETKEY")
+            )
+        ),
+        sleep=lambda s: None,
+    )
+    with pytest.raises(FirmsError) as exc:
+        c.fetch("X", "1,2,3,4", 1)
+    assert "Invalid date" in str(exc.value) and "SECRETKEY" not in str(exc.value)

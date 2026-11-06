@@ -49,3 +49,21 @@ def test_coverage_days_recorded(db, settings):
     run_nrt(db, FakeClient(), settings)
     days = [r[0].isoformat() for r in db.execute("SELECT day FROM coverage_days ORDER BY day")]
     assert days == ["2026-10-30", "2026-10-31"]
+
+
+class RecordingClient(FakeClient):
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+
+    def fetch(self, source, bbox, day_range, start=None):
+        self.calls.append((source, start, day_range))
+        return super().fetch(source, bbox, day_range, start)
+
+
+def test_run_nrt_always_sends_start_date(db, settings):
+    from datetime import date
+
+    client = RecordingClient()
+    run_nrt(db, client, settings, today=date(2026, 11, 6))
+    assert {c[1:] for c in client.calls} == {(date(2026, 11, 5), 2)}
