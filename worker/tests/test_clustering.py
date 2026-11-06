@@ -196,3 +196,35 @@ def test_dense_site_is_one_cluster_and_weights_count_detections():
     # 3 detections snapped into the same grid cell still satisfy min_samples=3
     same = cluster_points(np.array([27.0, 27.0001, 27.0002]), np.array([50.0] * 3), 500, 3)
     assert set(same) == {0}
+
+
+def test_cluster_centroids_match_weighted_centroid():
+    from flarewatch.clustering import cluster_centroids
+
+    rng = np.random.default_rng(5)
+    labels = rng.integers(-1, 50, 5000)
+    lat, lon = rng.uniform(12, 38, 5000), rng.uniform(34, 63, 5000)
+    frp = rng.uniform(0, 20, 5000)
+    frp[labels == 7] = 0  # all-zero FRP -> unweighted mean
+    got = cluster_centroids(labels, lat, lon, frp)
+    for k in range(50):
+        m = labels == k
+        assert got[k] == pytest.approx(weighted_centroid(lat[m], lon[m], frp[m]))
+
+
+def test_thousands_of_clusters_are_fast(db, settings):
+    import time
+
+    rng = np.random.default_rng(6)
+    t0 = datetime.now(UTC) - timedelta(days=2)
+    dets = []
+    for g in range(3000):  # 3000 separate groups, ~11 km apart
+        c_lat, c_lon = 13 + (g // 60) * 0.1, 35 + (g % 60) * 0.1
+        dets += _dets(
+            rng.normal(c_lat, 5e-4, 3), rng.normal(c_lon, 5e-4, 3), t0 + timedelta(minutes=g * 5)
+        )
+    insert_detections(db, dets)
+    start = time.time()
+    res = cluster_unassigned(db, settings)
+    assert res.new_sites == 3000
+    assert time.time() - start < 30

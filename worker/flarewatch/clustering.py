@@ -82,6 +82,29 @@ def weighted_centroid(lat: np.ndarray, lon: np.ndarray, frp: np.ndarray) -> tupl
     return float(np.average(lat, weights=w)), float(np.average(lon, weights=w))
 
 
+def cluster_centroids(
+    labels: np.ndarray, lat: np.ndarray, lon: np.ndarray, frp: np.ndarray
+) -> np.ndarray:
+    """FRP-weighted centroid (lat, lon) for every label 0..max in one pass.
+
+    Row k is the centroid of label k; clusters whose FRP is all missing/zero fall back to the
+    unweighted mean, as :func:`weighted_centroid` does. Noise (-1) is ignored.
+    """
+    keep = labels >= 0
+    lab, la, lo = labels[keep], lat[keep], lon[keep]
+    w = np.nan_to_num(np.asarray(frp, dtype=float)[keep], nan=0.0).clip(min=0)
+    n = int(lab.max()) + 1 if lab.size else 0
+    wsum = np.bincount(lab, weights=w, minlength=n)
+    cnt = np.bincount(lab, minlength=n).astype(float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        w_lat = np.bincount(lab, weights=w * la, minlength=n) / wsum
+        w_lon = np.bincount(lab, weights=w * lo, minlength=n) / wsum
+        m_lat = np.bincount(lab, weights=la, minlength=n) / cnt
+        m_lon = np.bincount(lab, weights=lo, minlength=n) / cnt
+    use_w = wsum > 0
+    return np.column_stack([np.where(use_w, w_lat, m_lat), np.where(use_w, w_lon, m_lon)])
+
+
 def format_site_code(n: int) -> str:
     return f"FW-{n:04d}"
 
@@ -148,6 +171,9 @@ def cluster_unassigned(conn: psycopg.Connection, settings: Settings) -> ClusterR
             (settings.cluster_window_days, list(settings.cluster_confidences)),
         )
         rows = cur.fetchall()
+        # End the transaction before the CPU-heavy part: hosted Postgres (e.g. Neon) kills
+        # sessions that sit idle inside an open transaction for a few minutes.
+        conn.commit()
         if not rows:
             return result
 
@@ -162,12 +188,8 @@ def cluster_unassigned(conn: psycopg.Connection, settings: Settings) -> ClusterR
         cluster_labels = sorted(set(labels.tolist()) - {-1})
         if not cluster_labels:
             return result
-        cents = np.array(
-            [
-                weighted_centroid(lat[labels == k], lon[labels == k], frp[labels == k])
-                for k in cluster_labels
-            ]
-        )
+        cents = cluster_centroids(labels, lat, lon, frp)[cluster_labels]
+        pos = {k: i for i, k in enumerate(cluster_labels)}
 
         # 1) nearest existing site within the match radius, for every centroid at once
         cur.execute(
@@ -194,20 +216,23 @@ def cluster_unassigned(conn: psycopg.Connection, settings: Settings) -> ClusterR
         new_keys = [k for k in cluster_labels if k not in site_for]
         merged_into: dict[int, int] = {}
         leaders: list[int] = []
+        leader_lat = np.empty(len(new_keys))
+        leader_lon = np.empty(len(new_keys))
         for k in new_keys:
-            c = cents[cluster_labels.index(k)]
-            if leaders:
-                lc = cents[[cluster_labels.index(x) for x in leaders]]
-                d = haversine_m(c[0], c[1], lc[:, 0], lc[:, 1])
+            c = cents[pos[k]]
+            n = len(leaders)
+            if n:
+                d = haversine_m(c[0], c[1], leader_lat[:n], leader_lon[:n])
                 j = int(np.argmin(d))
                 if d[j] <= settings.site_match_radius_m:
                     merged_into[k] = leaders[j]
                     continue
+            leader_lat[n], leader_lon[n] = c
             leaders.append(k)
         if leaders:
             next_n = _next_code_number(cur)
             codes = [format_site_code(next_n + i) for i in range(len(leaders))]
-            lc = cents[[cluster_labels.index(x) for x in leaders]]
+            lc = cents[[pos[x] for x in leaders]]
             cur.execute(
                 """
                 INSERT INTO sites (code, geom)
