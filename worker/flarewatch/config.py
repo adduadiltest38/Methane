@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     new_site_min_observed_days: int = 5
     new_site_min_persistence: float = 0.3
 
+    @field_validator("firms_map_key", "database_url", "firms_base_url", mode="before")
+    @classmethod
+    def _strip(cls, v: object) -> object:
+        # Secrets pasted into CI settings often carry a trailing newline or space, which
+        # breaks URLs built from them (FIRMS then rejects the whole request).
+        return v.strip() if isinstance(v, str) else v
+
     @field_validator("region_bbox", mode="before")
     @classmethod
     def _parse_bbox(cls, v: object) -> object:

@@ -144,3 +144,13 @@ def test_client_error_includes_reason_without_key():
     with pytest.raises(FirmsError) as exc:
         c.fetch("X", "1,2,3,4", 1)
     assert "Invalid date" in str(exc.value) and "SECRETKEY" not in str(exc.value)
+
+
+def test_settings_strip_whitespace_from_key(monkeypatch):
+    from flarewatch.config import Settings
+
+    monkeypatch.setenv("FIRMS_MAP_KEY", "  abc123\n")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@h/db\n")
+    s = Settings(_env_file=None)
+    assert s.firms_map_key == "abc123"
+    assert s.database_url == "postgresql://u:p@h/db"
