@@ -101,8 +101,9 @@ def test_read_reference_file_flexible_columns():
 
 
 def test_classify_sites_in_db(db, settings):
-    load_reference(db, read_reference_file(FIXTURES / "reference_sample.csv"),
-                   bbox=settings.region_bbox)
+    load_reference(
+        db, read_reference_file(FIXTURES / "reference_sample.csv"), bbox=settings.region_bbox
+    )
     assert db.execute("SELECT COUNT(*) FROM reference_flares").fetchone()[0] == 2
 
     today = date.today()
@@ -110,8 +111,21 @@ def test_classify_sites_in_db(db, settings):
     for k in range(40):  # every other day for 80 days at a reference location
         t = datetime(today.year, today.month, today.day, 1, tzinfo=UTC) - timedelta(days=2 * k)
         for j in range(2):
-            dets.append(Detection("TEST", t + timedelta(minutes=j), 29.3764, 47.6495 + j * 1e-4,
-                                  340, 300, 12.0, "n", "N", 0.4, 0.4))
+            dets.append(
+                Detection(
+                    "TEST",
+                    t + timedelta(minutes=j),
+                    29.3764,
+                    47.6495 + j * 1e-4,
+                    340,
+                    300,
+                    12.0,
+                    "n",
+                    "N",
+                    0.4,
+                    0.4,
+                )
+            )
     insert_detections(db, dets)
     cluster_unassigned(db, settings)
     refresh_site_geometry(db)

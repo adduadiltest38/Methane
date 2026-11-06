@@ -28,9 +28,7 @@ log = logging.getLogger(__name__)
 EARTH_RADIUS_M = 6_371_008.8
 
 
-def cluster_points(
-    lat: np.ndarray, lon: np.ndarray, eps_m: float, min_samples: int
-) -> np.ndarray:
+def cluster_points(lat: np.ndarray, lon: np.ndarray, eps_m: float, min_samples: int) -> np.ndarray:
     """Run DBSCAN with a haversine metric. Returns labels (-1 = noise)."""
     if len(lat) == 0:
         return np.empty(0, dtype=int)

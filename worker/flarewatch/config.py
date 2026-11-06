@@ -101,9 +101,23 @@ class Settings(BaseSettings):
 
     def thresholds(self) -> dict[str, float]:
         """Thresholds exposed to the web app / About page."""
-        keys = [k for k in type(self).model_fields if k.startswith(("flare_", "industrial_",
-                "transient_", "conf_", "change_", "inactive_", "new_site_", "dbscan_",
-                "site_match"))]
+        keys = [
+            k
+            for k in type(self).model_fields
+            if k.startswith(
+                (
+                    "flare_",
+                    "industrial_",
+                    "transient_",
+                    "conf_",
+                    "change_",
+                    "inactive_",
+                    "new_site_",
+                    "dbscan_",
+                    "site_match",
+                )
+            )
+        ]
         return {k: getattr(self, k) for k in keys}
 
 

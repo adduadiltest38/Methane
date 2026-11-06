@@ -92,8 +92,9 @@ def test_fetch_retries_then_succeeds():
         return httpx.Response(200, text=body)
 
     sleeps: list[float] = []
-    c = FirmsClient("KEY", client=httpx.Client(transport=httpx.MockTransport(handler)),
-                    sleep=sleeps.append)
+    c = FirmsClient(
+        "KEY", client=httpx.Client(transport=httpx.MockTransport(handler)), sleep=sleeps.append
+    )
     assert len(c.fetch("VIIRS_SNPP_NRT", "34,12,63,38", 2)) == 4
     assert calls["n"] == 3
     assert sleeps == [2, 4]
@@ -117,8 +118,9 @@ def test_fetch_client_error_not_retried():
         calls["n"] += 1
         return httpx.Response(400, text="bad")
 
-    c = FirmsClient("K", client=httpx.Client(transport=httpx.MockTransport(handler)),
-                    sleep=lambda s: None)
+    c = FirmsClient(
+        "K", client=httpx.Client(transport=httpx.MockTransport(handler)), sleep=lambda s: None
+    )
     with pytest.raises(FirmsError):
         c.fetch("X", "1,2,3,4", 1)
     assert calls["n"] == 1

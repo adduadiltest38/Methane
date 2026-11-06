@@ -51,8 +51,19 @@ def test_site_code_format():
 
 def _dets(lat, lon, when, frp=10.0, night=True):
     return [
-        Detection("TEST", when + timedelta(minutes=i), float(a), float(o), 330, 300, frp,
-                  "n", "N" if night else "D", 0.4, 0.4)
+        Detection(
+            "TEST",
+            when + timedelta(minutes=i),
+            float(a),
+            float(o),
+            330,
+            300,
+            frp,
+            "n",
+            "N" if night else "D",
+            0.4,
+            0.4,
+        )
         for i, (a, o) in enumerate(zip(lat, lon, strict=True))
     ]
 
@@ -90,8 +101,19 @@ def test_db_clusters_and_reassigns_to_existing_sites(db, settings):
 def test_low_confidence_excluded(db, settings):
     t0 = datetime.now(UTC) - timedelta(days=1)
     dets = [
-        Detection("TEST", t0 + timedelta(minutes=i), 29.0 + i * 1e-4, 48.0, 330, 300, 5, "l",
-                  "N", 0.4, 0.4)
+        Detection(
+            "TEST",
+            t0 + timedelta(minutes=i),
+            29.0 + i * 1e-4,
+            48.0,
+            330,
+            300,
+            5,
+            "l",
+            "N",
+            0.4,
+            0.4,
+        )
         for i in range(5)
     ]
     insert_detections(db, dets)

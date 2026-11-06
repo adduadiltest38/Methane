@@ -36,8 +36,19 @@ def insert_detections(conn: psycopg.Connection, detections: Sequence[Detection])
         ) as copy:
             for d in detections:
                 copy.write_row(
-                    (d.source, d.acq_time, d.latitude, d.longitude, d.bright_ti4, d.bright_ti5,
-                     d.frp, d.confidence, d.daynight, d.scan, d.track)
+                    (
+                        d.source,
+                        d.acq_time,
+                        d.latitude,
+                        d.longitude,
+                        d.bright_ti4,
+                        d.bright_ti5,
+                        d.frp,
+                        d.confidence,
+                        d.daynight,
+                        d.scan,
+                        d.track,
+                    )
                 )
         cur.execute(
             """

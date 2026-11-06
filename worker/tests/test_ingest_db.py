@@ -33,7 +33,7 @@ def test_run_twice_no_duplicates(db, settings):
     ).fetchall()
     assert len(runs) == 2 * len(settings.nrt_sources)
     assert all(r[1] == "success" and r[2] == 4 and r[4] for r in runs)
-    assert [r[3] for r in runs[len(settings.nrt_sources):]] == [0] * len(settings.nrt_sources)
+    assert [r[3] for r in runs[len(settings.nrt_sources) :]] == [0] * len(settings.nrt_sources)
 
 
 def test_failed_source_is_logged(db, settings):

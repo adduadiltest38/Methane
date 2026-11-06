@@ -104,8 +104,9 @@ def confidence(label: str, f: SiteFeatures, s: Settings) -> float:
     return round(min(1.0, max(0.0, score)), 3)
 
 
-def load_features(conn: psycopg.Connection, s: Settings, today: date | None = None
-                  ) -> dict[int, SiteFeatures]:
+def load_features(
+    conn: psycopg.Connection, s: Settings, today: date | None = None
+) -> dict[int, SiteFeatures]:
     """Compute :class:`SiteFeatures` for every site from the database."""
     today = today or date.today()
     with conn.cursor() as cur:
@@ -157,8 +158,9 @@ def load_features(conn: psycopg.Connection, s: Settings, today: date | None = No
     return out
 
 
-def classify_sites(conn: psycopg.Connection, s: Settings, today: date | None = None
-                   ) -> dict[str, int]:
+def classify_sites(
+    conn: psycopg.Connection, s: Settings, today: date | None = None
+) -> dict[str, int]:
     feats = load_features(conn, s, today)
     counts = dict.fromkeys(CLASSES, 0)
     rows = []

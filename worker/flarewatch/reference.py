@@ -30,10 +30,7 @@ def _pick(columns: list[str], options: tuple[str, ...]) -> str | None:
 def read_reference_file(path: str | Path, default_year: int | None = None) -> pd.DataFrame:
     """Read a CSV (or Excel) reference file into columns year, lat, lon, flr_type."""
     path = Path(path)
-    if path.suffix.lower() in {".xlsx", ".xls"}:
-        raw = pd.read_excel(path)
-    else:
-        raw = pd.read_csv(path)
+    raw = pd.read_excel(path) if path.suffix.lower() in {".xlsx", ".xls"} else pd.read_csv(path)
     cols = list(raw.columns)
     lat_c, lon_c = _pick(cols, LAT_COLS), _pick(cols, LON_COLS)
     if not lat_c or not lon_c:
