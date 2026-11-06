@@ -100,7 +100,7 @@ class Settings(BaseSettings):
         return ",".join(f"{c:g}" for c in self.region_bbox)
 
     def thresholds(self) -> dict[str, float]:
-        """Thresholds exposed to the web app / About page."""
+        """Thresholds shown on the web About page (mirrored in web/lib/thresholds.json)."""
         keys = [
             k
             for k in type(self).model_fields

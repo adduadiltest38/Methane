@@ -2,7 +2,7 @@
 DATABASE_URL ?= postgresql://flarewatch:flarewatch@localhost:5432/flarewatch
 export DATABASE_URL
 
-.PHONY: db-up db-down db-reset migrate worker-install test lint web-install web-dev web-build banned-words seed
+.PHONY: db-up db-down db-reset migrate worker-install test lint web-install web-dev web-build banned-words seed ingest backfill
 
 db-up:            ## Start PostGIS in docker and apply migrations
 	docker compose up -d --wait db
@@ -21,8 +21,14 @@ migrate:
 worker-install:
 	cd worker && pip install -e ".[dev]"
 
-test:
+test:            ## Worker tests (DB tests need TEST_DATABASE_URL pointing at a throwaway DB)
 	cd worker && pytest
+
+ingest:           ## Fetch latest FIRMS NRT data and process (needs FIRMS_MAP_KEY)
+	cd worker && python -m flarewatch.cli run
+
+backfill:         ## Pull 90 days of Standard Processing data (needs FIRMS_MAP_KEY)
+	cd worker && python -m flarewatch.cli backfill --days 90
 
 lint:
 	cd worker && ruff check . && ruff format --check .
@@ -34,7 +40,7 @@ seed:             ## Load synthetic demo data (no API key needed)
 web-install:
 	cd web && npm ci
 
-web-dev:
+web-dev:          ## Web app on http://localhost:3000 (uses DATABASE_URL when no read-only URL is set)
 	cd web && npm run dev
 
 web-build:

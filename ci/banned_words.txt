@@ -1,0 +1,18 @@
+# Words that must not appear in UI copy, README or docs (PROJECT_SPEC.md §2.2).
+# One term per line, matched case-insensitively on word boundaries. Lines starting with # are ignored.
+#
+# Operator / company names are deliberately NOT stored in this repository (guardrail §2.1).
+# Provide them to CI through the BANNED_OPERATOR_NAMES secret (one name per line); the
+# check script merges them with this file.
+polluter
+polluters
+polluting
+violation
+violations
+illegal
+illegally
+exposed
+expose
+underreported
+under-reported
+underreporting

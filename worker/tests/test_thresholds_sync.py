@@ -13,7 +13,7 @@ def test_web_thresholds_match_config():
     actual = json.loads(WEB_THRESHOLDS.read_text())
     assert actual == expected, (
         "web/lib/thresholds.json is out of date; regenerate with:\n"
-        "  python -c \"import json; from flarewatch.config import Settings; "
-        "print(json.dumps(Settings(_env_file=None).thresholds(), indent=2))\""
+        '  python -c "import json; from flarewatch.config import Settings; '
+        'print(json.dumps(Settings(_env_file=None).thresholds(), indent=2))"'
         " > ../web/lib/thresholds.json"
     )
