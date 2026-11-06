@@ -4,7 +4,7 @@ FlareWatch uses only free, publicly available satellite data. It does not join a
 
 ## NASA FIRMS — VIIRS 375 m active fire detections
 
-- **Products:** `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT` (near real-time, ~3 h latency) and `VIIRS_SNPP_SP` (standard processing, used for historical backfill).
+- **Products:** `VIIRS_SNPP_NRT`, `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT` (near real-time, ~3 h latency; also used for the initial 90-day backfill). `VIIRS_SNPP_SP` (standard processing) can be pulled for older periods with `BACKFILL_SOURCES=VIIRS_SNPP_SP`; don't mix it with NRT for the same dates, or detections are counted twice.
 - **Access:** FIRMS Area API, free `MAP_KEY` from <https://firms.modaps.eosdis.nasa.gov/api/>.
 - **License:** NASA data are openly shared without restriction (NASA Earth Science Data and Information Policy).
 - **Required acknowledgement (displayed on the map and About page):**

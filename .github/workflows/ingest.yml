@@ -40,7 +40,7 @@ jobs:
         run: pip install .
       - name: Apply migrations
         run: |
-          sudo apt-get install -y -q postgresql-client >/dev/null
+          command -v psql >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q postgresql-client; }
           ./db/migrate.sh
       - name: Run worker
         working-directory: worker

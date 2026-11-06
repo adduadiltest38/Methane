@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     region_bbox: Annotated[tuple[float, float, float, float], NoDecode] = (34.0, 12.0, 63.0, 38.0)
     nrt_sources: Annotated[tuple[str, ...], NoDecode] = NRT_SOURCES
     sp_sources: Annotated[tuple[str, ...], NoDecode] = SP_SOURCES
+    # Backfill uses the same NRT sources as the regular ingest by default: the SP archive lags
+    # NRT by weeks to months, and mixing SP and NRT copies of one detection would double-count
+    # FRP (they differ in `source`, so the UNIQUE dedupe can't merge them). Override with
+    # BACKFILL_SOURCES=VIIRS_SNPP_SP for older periods.
+    backfill_sources: Annotated[tuple[str, ...], NoDecode] = NRT_SOURCES
     nrt_day_range: int = 2
     # FIRMS caps the number of days per area request; backfill is chunked by this.
     firms_max_day_range: int = 5
@@ -80,7 +85,9 @@ class Settings(BaseSettings):
             return parts
         return v
 
-    @field_validator("nrt_sources", "sp_sources", "cluster_confidences", mode="before")
+    @field_validator(
+        "nrt_sources", "sp_sources", "backfill_sources", "cluster_confidences", mode="before"
+    )
     @classmethod
     def _parse_csv_list(cls, v: object) -> object:
         if isinstance(v, str):

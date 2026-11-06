@@ -173,12 +173,12 @@ def backfill(
     end: date | None = None,
     sources: Sequence[str] | None = None,
 ) -> dict[str, int]:
-    """Pull ``days`` days of Standard Processing data in FIRMS-sized chunks."""
+    """Pull ``days`` days of archive data in FIRMS-sized chunks (``backfill_sources``)."""
     end = end or date.today()
     start = end - timedelta(days=days - 1)
     chunks = list(date_chunks(start, end, settings.firms_max_day_range))
     results: dict[str, int] = {}
-    for source in sources or settings.sp_sources:
+    for source in sources or settings.backfill_sources:
         _, inserted = ingest_source(
             conn, client, source, settings.bbox_str, chunks, pause_s=settings.request_pause_s
         )
